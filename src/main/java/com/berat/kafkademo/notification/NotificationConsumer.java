@@ -4,7 +4,12 @@ import org.springframework.kafka.annotation.DltHandler;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.annotation.RetryableTopic;
 import org.springframework.kafka.retrytopic.TopicSuffixingStrategy;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Listens to order events and simulates sending notifications.
@@ -24,9 +29,17 @@ import org.springframework.stereotype.Service;
  * After all retries are exhausted, message goes to DLQ (Dead Letter Queue).
  * DLQ = a separate topic where failed messages wait for manual inspection.
  * This prevents one bad message from blocking the entire queue.
+ *
+ * WHAT IS IDEMPOTENCY?
+ * Same message may arrive twice due to retry or network issues.
+ * We track processed orderIds to ensure each order is handled exactly once.
+ * In production, use Redis or DB instead of in-memory Set.
  */
 @Service
 public class NotificationConsumer {
+
+    // NOTE: In production, use Redis or DB — this is in-memory, resets on restart
+    private final Set<String> processedOrders = new HashSet<>();
 
     @RetryableTopic(
             attempts = "3",
@@ -35,7 +48,16 @@ public class NotificationConsumer {
             topicSuffixingStrategy = TopicSuffixingStrategy.SUFFIX_WITH_INDEX_VALUE
     )
     @KafkaListener(topics = "orders", groupId = "notification-group")
-    public void handleOrder(String orderDetails) {
+    public void handleOrder(String orderDetails,
+                            @Header(KafkaHeaders.RECEIVED_KEY) String orderId) {
+
+        // IDEMPOTENCY CHECK
+        if (processedOrders.contains(orderId)) {
+            System.out.println("Duplicate detected — skipping: " + orderId);
+            return;
+        }
+        processedOrders.add(orderId);
+
         System.out.println("Notification received for order: " + orderDetails);
 
         // simulate failure for testing

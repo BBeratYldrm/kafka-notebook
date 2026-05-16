@@ -16,8 +16,9 @@ public class OrderController {
     }
 
     @PostMapping
-    public String placeOrder(@RequestBody String orderDetails) {
-        orderProducer.sendOrder(orderDetails);
+    public String placeOrder(@RequestParam String orderId,
+                             @RequestBody String orderDetails) {
+        orderProducer.sendOrder(orderId, orderDetails);
         return "Order placed: " + orderDetails;
     }
 }

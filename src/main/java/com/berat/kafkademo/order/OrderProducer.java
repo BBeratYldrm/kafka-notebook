@@ -17,8 +17,14 @@ public class OrderProducer {
         this.kafkaTemplate = kafkaTemplate;
     }
 
-    public void sendOrder(String orderDetails) {
-        kafkaTemplate.send(TOPIC, orderDetails);
-        System.out.println("Order sent to Kafka: " + orderDetails);
+    /**
+     * WHY partition key?
+     * Kafka guarantees ordering only within the same partition.
+     * By using orderId as the key, all events for the same order
+     * always go to the same partition — ordering is preserved.
+     */
+    public void sendOrder(String orderId, String orderDetails) {
+        kafkaTemplate.send(TOPIC, orderId, orderDetails);
+        System.out.println("Order sent to Kafka | key: " + orderId + " | value: " + orderDetails);
     }
 }

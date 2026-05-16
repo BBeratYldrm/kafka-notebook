@@ -23,9 +23,19 @@ NotificationConsumer    PaymentConsumer      InventoryConsumer
 ## Key Kafka Concepts Demonstrated
 
 - **Topic**: `orders` — single topic, multiple consumers
-- **Consumer Groups**: each service has its own group — same message delivered to all groups independently
-- **Fan-out pattern**: one event triggers multiple downstream services
-- **Decoupling**: producers and consumers are fully independent
+- **Consumer Groups**: each service has its own group — fan-out pattern
+- **Partition Key**: same orderId always goes to same partition — ordering guaranteed
+- **Offset**: Kafka tracks how far each consumer has read via `__consumer_offsets`
+- **Retry + DLQ**: failed messages are retried automatically, then sent to Dead Letter Topic
+- **Idempotency**: duplicate messages are detected and skipped using orderId tracking
+
+## What is NOT in scope (but important to know)
+
+- **At-least-once delivery**: Kafka guarantees a message is delivered at least once.
+  Duplicates are possible — that's why idempotency matters.
+- **Outbox Pattern**: to guarantee DB write and Kafka publish happen together atomically,
+  write to an outbox table first, then a poller sends to Kafka.
+  See: notes/distributed/19-kafka.md
 
 ## Tech Stack
 

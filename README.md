@@ -4,22 +4,28 @@ A simple event-driven system built with Spring Boot and Apache Kafka.
 Demonstrates producer/consumer architecture with decoupled services.
 
 ## Architecture
+
+```
 HTTP POST /orders
-↓
+      ↓
 OrderController
-↓
+      ↓
 OrderProducer → Kafka ("orders" topic)
-↓
-NotificationConsumer
-↓
-Email/SMS simulation
+                              ↓
+        ┌─────────────────────┼────────────────────┐
+        ↓                     ↓                    ↓
+NotificationConsumer    PaymentConsumer      InventoryConsumer
+(notification-group)    (payment-group)      (inventory-group)
+        ↓                     ↓                    ↓
+   Send email           Process payment         Update stock
+```
 
-## How It Works
+## Key Kafka Concepts Demonstrated
 
-1. Client sends a POST request to `/orders`
-2. OrderProducer publishes the event to Kafka
-3. NotificationConsumer reads from Kafka and simulates sending a notification
-4. Services are fully decoupled — producer doesn't know about consumer
+- **Topic**: `orders` — single topic, multiple consumers
+- **Consumer Groups**: each service has its own group — same message delivered to all groups independently
+- **Fan-out pattern**: one event triggers multiple downstream services
+- **Decoupling**: producers and consumers are fully independent
 
 ## Tech Stack
 
@@ -44,6 +50,13 @@ curl -X POST http://localhost:8080/orders \
 ```
 
 ## Expected Output
+
+```
 Order sent to Kafka: Order#1 - iPhone
 Notification received for order: Order#1 - iPhone
 Email sent for: Order#1 - iPhone
+Payment processing for order: Order#1 - iPhone
+Payment completed for: Order#1 - iPhone
+Inventory processing for order: Order#1 - iPhone
+Inventory completed for: Order#1 - iPhone
+```
